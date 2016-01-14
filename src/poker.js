@@ -1,168 +1,148 @@
 var poker = {
   // Returns the name of the input hand.
   // See the specs for the required formats.
-  labelHand: function(hand) {
-      var isRoyalFlush = function(hand){
-        var sortedHand = sortHandLowToHigh(hand);
-        if( isStraightFlush(hand) && sortedHand[0].rank==='T' ){
-          // Special case where A is 1.
-          return 'Royal flush'
-        }
-      };
+  labelHand: function(handStr) {
 
-      var isStraightFlush = function(hand){
-        if( isFlush(hand) && isStraight(hand) ){
-          return isStraight(hand).replace('Straight', 'Straight flush');
-        }
-        return false;
-      };
+    var rankKeys = 'A23456789TJQK'.split('');
+    var suitKeys = 'HDCS'.split('');
+    var numericalRanks = {
+      'A': 14,
+      'K': 13,
+      'Q': 12,
+      'J': 11,
+      'T': 10
+    };
 
-      var isFourOfAKind = function(hand){
-        var counts = countsOfRanks(hand)
-        if(counts[4].length){
-          return 'Four of a kind of '+counts[4][0];
-        }
-        return false;
-      };
+    // format hand
+    // [{rank: 'A', suit: 'H', numericalRank: 14}, ...]
+    var hand = handStr
+      .split(' ')
+      .map(function (card) {
+        var rank = card[0];
+        return {
+          rank: rank,
+          suit: card[1],
+          numericalRank: numericalRanks[rank] || rank
+        };
+      })
+      .sort(function (a, b) {
+        return a.numericalRank > b.numericalRank;
+      });
 
-      var isFullHouse = function(hand){
-        var counts = countsOfRanks(hand)
-        if(counts[3].length && counts[2].length){
-          return 'Full house of '+counts[3][0];
-        }
-        return false;
-        return false;
-      };
+    // create buckets
+    // { A: 0, 1: 0, 2: 0, etc... }
+    // { H: 0, D: 0, C: 0, S: 0 }
+    var ranks = {};
+    var suits = {};
 
-      var isFlush = function(hand){
-        var sortedHand = sortHandLowToHigh(hand);
-        // reduce happens each time :(
-        var flushSuit = sortedHand.reduce(function(suit, card){
-          return suit = card.suit === suit ? suit : false;
-        }, sortedHand[0].suit);
-        if(flushSuit){
-          return 'Flush with high card '+sortedHand[4].rank;
-        }
-      };
+    rankKeys.map(function (rank) {
+      ranks[rank] = 0;
+    });
 
-      var isStraight = function(hand){
-        var sortedHand = sortHandLowToHigh(hand);
-        var low = sortedHand[0];
-        var nextHighest = sortedHand[3];
-        var high = sortedHand[4];
-        if(high.rankNum-low.rankNum===4){
-          return 'Straight up to '+high.rank;
-        } else if(high.rank==='A' && low.rank==='2' && nextHighest.rank==='5'){
-          // Special case where A is 1.
-          return 'Straight up to 5';
-        }
-      };
+    suitKeys.map(function (suit) {
+      suits[suit] = 0;
+    });
 
-      var isThreeOfAKind = function(hand){
-        var counts = countsOfRanks(hand)
-        if(counts[3].length){
-          return 'Three of a kind of '+counts[3][0];
-        }
-        return false;
-      };
+    // fill buckets
+    // { A: 1, 1: 2, 2: 3, etc... } <- full house
+    // { H: 5, D: 0, C: 0, S: 0 } <- oooo flush
+    hand.map(function (card) {
+      ranks[card.rank]++;
+      suits[card.suit]++;
+    });
 
-      var isTwoPair = function(hand){
-        var counts = countsOfRanks(hand)
-        if(counts[2].length===2 || counts[4].length){
-          return 'Two pair of '+counts[2][1]+' and '+counts[2][0];
-        }
-        return false;
-      };
+    // evaluate hand
+    function getFlush() {
+      return suitKeys.filter(function (key) {
+        return suits[key] > 4;
+      });
+    }
 
-      var isPair = function(hand){
-        var pair = countsOfRanks(hand)[2];
-        if(pair.length){
-          return 'Pair of '+pair;
-        }
-      };
+    function getStraight() {
+      return rankKeys.reduce(function (lastCard, key) {
+        return
+      });
+    }
 
-      var isHighCard = function(hand){
-        var highCard = sortHandLowToHigh(hand)[4];
-        return highCard.rank+' High'
-      };
+    function getPairs() {
+      return rankKeys.filter(function (key) {
+        return ranks[key] > 1;
+      });
+    }
 
-      var splitHand = function(hand){
-        return hand
-          .split(' ')
-          .map(function(card){
-            var actualRank = card[0];
-            var suit = card[1];
-            var numericRanks = {
-              "T": 10,
-              "J": 11,
-              "Q": 12,
-              "K": 13,
-              "A": 14
-            };
-            var numericRank = numericRanks[actualRank] || actualRank;
-            return {rankNum: numericRank, rank: actualRank, suit: suit};
-          });
-      };
+    function getThreeOfKind() {
+      return rankKeys.filter(function (key) {
+        return ranks[key] > 2;
+      });
+    }
 
-      var sortHandLowToHigh = function(hand){
-        return splitHand(hand)
-          .sort(function(a,b){
-            return a.rankNum > b.rankNum;
-          });
-      };
-      var countsOfRanks = function(hand){
-        var results = {1:[], 2:[], 3:[], 4:[]};
-        var sortedHand = sortHandLowToHigh(hand);
-        var currentRank = sortedHand[0].rank;
-        var currentRankCount = 0;
-        for(var i=0; i<5; i++){
-          if(sortedHand[i].rank === currentRank){
-            currentRankCount++;
-          } else {
-            results[currentRankCount].push(currentRank);
-            currentRank = sortedHand[i].rank;
-            currentRankCount = 1;
-          }
-        }
-        results[currentRankCount].push(currentRank);
-        // >[2,2,3,4,5]
-        // <{1:[3,4,5], 2:[2]}
-        // >[K,K,Q,8,3]
-        // <{1:[3,8,Q], 2:[K]}
-        return results;
-      };
+    function getFourOfKind() {
+      return rankKeys.filter(function (key) {
+        return ranks[key] > 3;
+      });
+    }
 
-      // Return highest hand possible.
-      if( isFourOfAKind(hand) ){
-        return isFourOfAKind(hand);
+    function getStraightResult(){
+      var low = hand[0];
+      var nextHighest = hand[3];
+      var high = hand[4];
+      if(high.numericalRank - low.numericalRank === 4) {
+        return 'Straight up to ' + high.rank;
       }
-      else if( isThreeOfAKind(hand) ){
-        if( isFullHouse(hand) ){
-          return isFullHouse(hand);
-        } else {
-          return isThreeOfAKind(hand);
-        }
+      else if(high.rank === 'A' && low.rank === '2' && nextHighest.rank === '5') {
+        // Special case where A is 1.
+        return 'Straight up to 5';
       }
-      else if( isStraightFlush(hand) ){
-        if( isRoyalFlush(hand) ){
-          return isRoyalFlush(hand);
-        } else {
-          return isStraightFlush(hand)
-        }
-      } else if( isFlush(hand) ){
-        return isFlush(hand);
+    }
+
+    function getRoyalFlushResult() {
+      if (getStraightFlushResult() && hand[0].rank==='T' ){
+        return 'Royal flush'
       }
-      else if( isStraight(hand) ){
-        return isStraight(hand);
+    }
+
+    function getStraightFlushResult() {
+      if (getFlush().length && getStraightResult()) {
+        return getStraightResult().replace('Straight', 'Straight flush');
       }
-      else if( isPair(hand) ){
-        if( isTwoPair(hand) ){
-          return isTwoPair(hand);
-        } else {
-          return isPair(hand);
-        }
-      } else {
-        return isHighCard(hand);
+      return false;
+    }
+
+    // the kicker
+    function getHighCard() {
+      return hand[4].rank;
+    }
+
+    console.log(ranks);
+    console.log(suits);
+
+    // check strongest classification first
+    if (getRoyalFlushResult()) {
+      return getRoyalFlushResult();
+    }
+    else if (getStraightFlushResult()) {
+      return getStraightFlushResult();
+    }
+    else if (getStraightResult()) {
+      return getStraightResult();
+    }
+    else if (getFlush().length) {
+      return "Flush with high card " + getHighCard();
+    }
+    else if (getFourOfKind().length) {
+      return "Four of a kind of " + getFourOfKind()[0];
+    }
+    else if (getThreeOfKind().length) {
+      return "Three of a kind of " + getThreeOfKind()[0];
+    }
+    else if (getPairs().length) {
+      if (getPairs().length > 1) {
+        return "Two pair of " + getPairs()[0] + ' and ' + getPairs()[1];
       }
-  },
+      return "Pair of " + getPairs()[0];
+    }
+    else {
+      return getHighCard() + " High";
+    }
+  }
 };
