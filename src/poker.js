@@ -58,12 +58,6 @@ var poker = {
       });
     }
 
-    function getStraight() {
-      return rankKeys.reduce(function (lastCard, key) {
-        return
-      });
-    }
-
     function getPairs() {
       return rankKeys.filter(function (key) {
         return ranks[key] > 1;
@@ -82,22 +76,25 @@ var poker = {
       });
     }
 
+    function getFullHouse() {
+      var threes = getThreeOfKind();
+      var twos = getPairs();
+      if (threes.length && twos.length > 1) {
+        return threes.concat(twos);
+      }
+      return false;
+    }
+
     function getStraightResult(){
       var low = hand[0];
       var nextHighest = hand[3];
       var high = hand[4];
-      if(high.numericalRank - low.numericalRank === 4) {
+      if (high.numericalRank - low.numericalRank === 4) {
         return 'Straight up to ' + high.rank;
       }
-      else if(high.rank === 'A' && low.rank === '2' && nextHighest.rank === '5') {
-        // Special case where A is 1.
+      // Special case where A is 1.
+      else if (high.rank === 'A' && low.rank === '2' && nextHighest.rank === '5') {
         return 'Straight up to 5';
-      }
-    }
-
-    function getRoyalFlushResult() {
-      if (getStraightFlushResult() && hand[0].rank==='T' ){
-        return 'Royal flush'
       }
     }
 
@@ -106,6 +103,12 @@ var poker = {
         return getStraightResult().replace('Straight', 'Straight flush');
       }
       return false;
+    }
+
+    function getRoyalFlushResult() {
+      if (getStraightFlushResult() && hand[0].rank==='T' ){
+        return 'Royal flush'
+      }
     }
 
     // the kicker
@@ -131,6 +134,9 @@ var poker = {
     }
     else if (getFourOfKind().length) {
       return "Four of a kind of " + getFourOfKind()[0];
+    }
+    else if(getFullHouse().length) {
+      return "Full house of " + getThreeOfKind()[0];
     }
     else if (getThreeOfKind().length) {
       return "Three of a kind of " + getThreeOfKind()[0];
